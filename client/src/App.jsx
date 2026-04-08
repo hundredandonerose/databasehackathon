@@ -44,6 +44,13 @@ const publicCases = [
   "Все 3 checkpoint'а обязательны для завершения.",
 ];
 
+const sponsors = [
+  { name: "abr", logo: "/sponsors/abr_logo.png", alt: "abr logo", className: "sponsor-teaser__logo-image sponsor-teaser__logo-image--dark" },
+  { name: "ALT University", logo: "/sponsors/alt_university.jpeg", alt: "ALT University logo", className: "sponsor-teaser__logo-image" },
+  { name: "NIS", logo: "/sponsors/nis.webp", alt: "NIS logo", className: "sponsor-teaser__logo-image" },
+  { name: "Kcell", logo: "/sponsors/kcell.png", alt: "Kcell logo", className: "sponsor-teaser__logo-image" },
+];
+
 const checkpointLabels = {
   "checkpoint-1": "15:00 - 15:30",
   "checkpoint-2": "22:00 - 22:30",
@@ -549,10 +556,12 @@ function App() {
               <p>Этот блок расположен высоко на странице, чтобы sponsors и supporters были заметны с первого экрана.</p>
             </div>
             <div className="sponsor-teaser__grid">
-              {["ALT University", "NIS", "Tech Partner", "Media Partner"].map((sponsor) => (
-                <article key={sponsor} className="sponsor-teaser__card">
-                  <div className="sponsor-teaser__logo">LOGO</div>
-                  <strong>{sponsor}</strong>
+              {sponsors.map((sponsor) => (
+                <article key={sponsor.name} className="sponsor-teaser__card">
+                  <div className="sponsor-teaser__logo">
+                    <img className={sponsor.className} src={sponsor.logo} alt={sponsor.alt} />
+                  </div>
+                  <strong>{sponsor.name}</strong>
                 </article>
               ))}
             </div>
