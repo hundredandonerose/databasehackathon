@@ -78,6 +78,16 @@ const judgeCriteriaFallback = [
   { key: "pitchPresentation", label: "Питч / Презентация", max: 15 },
 ];
 
+const createJudgeDraft = (score) => ({
+  problemUnderstanding: score?.problemUnderstanding != null ? String(score.problemUnderstanding) : "",
+  solutionQuality: score?.solutionQuality != null ? String(score.solutionQuality) : "",
+  innovation: score?.innovation != null ? String(score.innovation) : "",
+  feasibility: score?.feasibility != null ? String(score.feasibility) : "",
+  prototypeMvp: score?.prototypeMvp != null ? String(score.prototypeMvp) : "",
+  pitchPresentation: score?.pitchPresentation != null ? String(score.pitchPresentation) : "",
+  comments: score?.comments ?? "",
+});
+
 function App() {
   const [isNavHidden, setIsNavHidden] = useState(false);
   const [token, setToken] = useState(() => localStorage.getItem("hackathon_token") || "");
@@ -146,15 +156,7 @@ function App() {
             Object.fromEntries(
               (judgeData.teams || []).map((teamItem) => [
                 teamItem.id,
-                {
-                  problemUnderstanding: teamItem.score?.problemUnderstanding ?? 0,
-                  solutionQuality: teamItem.score?.solutionQuality ?? 0,
-                  innovation: teamItem.score?.innovation ?? 0,
-                  feasibility: teamItem.score?.feasibility ?? 0,
-                  prototypeMvp: teamItem.score?.prototypeMvp ?? 0,
-                  pitchPresentation: teamItem.score?.pitchPresentation ?? 0,
-                  comments: teamItem.score?.comments ?? "",
-                },
+                createJudgeDraft(teamItem.score),
               ])
             )
           );
@@ -398,11 +400,26 @@ function App() {
   });
 
   const handleJudgeDraftChange = (teamId, field, value) => {
+    const criterion = (judgeDashboard?.criteria || judgeCriteriaFallback).find((item) => item.key === field);
+    let nextValue = value;
+
+    if (field !== "comments") {
+      const digitsOnly = String(value).replace(/[^\d]/g, "");
+
+      if (!digitsOnly) {
+        nextValue = "";
+      } else {
+        const normalized = String(Number(digitsOnly));
+        const limited = criterion ? Math.min(Number(normalized), criterion.max) : Number(normalized);
+        nextValue = String(limited);
+      }
+    }
+
     setJudgeDrafts((current) => ({
       ...current,
       [teamId]: {
         ...current[teamId],
-        [field]: field === "comments" ? value : Number(value),
+        [field]: field === "comments" ? value : nextValue,
       },
     }));
     setJudgeStatus("");
@@ -413,10 +430,24 @@ function App() {
     setJudgeStatus("");
 
     try {
-      const payload = judgeDrafts[teamId] || {};
+      const draft = judgeDrafts[teamId] || {};
+      const payload = {
+        problemUnderstanding: Number(draft.problemUnderstanding || 0),
+        solutionQuality: Number(draft.solutionQuality || 0),
+        innovation: Number(draft.innovation || 0),
+        feasibility: Number(draft.feasibility || 0),
+        prototypeMvp: Number(draft.prototypeMvp || 0),
+        pitchPresentation: Number(draft.pitchPresentation || 0),
+        comments: draft.comments || "",
+      };
       const data = await apiRequest(`/judge/scores/${teamId}`, "PUT", payload, token);
       const refreshed = await apiRequest("/judge/dashboard", "GET", null, token);
       setJudgeDashboard(refreshed);
+      setJudgeDrafts(
+        Object.fromEntries(
+          (refreshed.teams || []).map((teamItem) => [teamItem.id, createJudgeDraft(teamItem.score)])
+        )
+      );
       setJudgeStatus(data.message);
     } catch (error) {
       setJudgeStatus(error.message || "Не удалось сохранить оценку.");
@@ -896,10 +927,11 @@ function App() {
                               {criterion.label} / {criterion.max}
                             </span>
                             <input
-                              type="number"
+                              type="text"
+                              inputMode="numeric"
                               min="0"
                               max={criterion.max}
-                              value={judgeDrafts[teamItem.id]?.[criterion.key] ?? 0}
+                              value={judgeDrafts[teamItem.id]?.[criterion.key] ?? ""}
                               onChange={(event) =>
                                 handleJudgeDraftChange(teamItem.id, criterion.key, event.target.value)
                               }
