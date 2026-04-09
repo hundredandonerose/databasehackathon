@@ -628,6 +628,22 @@ select {
   color: rgba(255, 255, 255, 0.88);
 }
 
+.prize-spotlight__places {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.prize-spotlight__places span {
+  display: inline-flex;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  color: white;
+  font-weight: 700;
+}
+
 .prize-spotlight__split {
   display: grid;
   gap: 14px;

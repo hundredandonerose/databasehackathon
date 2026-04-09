@@ -639,6 +639,11 @@ function App() {
                 <span className="prize-spotlight__badge">Призовой фонд</span>
                 <h3>2 250 000 тг</h3>
                 <p>3 бизнес-кейса. На каждый кейс по 3 победителя: 250 000 / 150 000 / 100 000 тг.</p>
+                <div className="prize-spotlight__places">
+                  <span>1 место — 350 000</span>
+                  <span>2 место — 250 000</span>
+                  <span>3 место — 150 000</span>
+                </div>
               </div>
               <div className="prize-spotlight__split">
                 <div className="prize-mini-card">
