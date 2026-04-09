@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import adminRoutes from "./routes/adminRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
+import judgeRoutes from "./routes/judgeRoutes.js";
 import teamRoutes from "./routes/teamRoutes.js";
 import { initializeDatabase, testDatabaseConnection } from "./config/db.js";
 
@@ -61,6 +62,7 @@ app.get("/api/health", async (_req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api", teamRoutes);
+app.use("/api", judgeRoutes);
 app.use("/api", adminRoutes);
 
 app.use((req, res) => {

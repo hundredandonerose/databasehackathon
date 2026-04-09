@@ -1,6 +1,7 @@
 import mysql from "mysql2/promise";
 import dotenv from "dotenv";
 import { caseSeeds, checkpointSeeds } from "../utils/constants.js";
+import { hashPassword } from "../utils/auth.js";
 
 dotenv.config();
 
@@ -35,10 +36,13 @@ export const initializeDatabase = async () => {
         email VARCHAR(190) NOT NULL,
         phone_number VARCHAR(25) NOT NULL,
         password_hash VARCHAR(255) NOT NULL,
+        role VARCHAR(20) NOT NULL DEFAULT 'participant',
         is_admin TINYINT(1) NOT NULL DEFAULT 0,
+        assigned_case_id INT UNSIGNED NULL,
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (id),
-        UNIQUE KEY uniq_users_email (email)
+        UNIQUE KEY uniq_users_email (email),
+        CONSTRAINT fk_users_assigned_case FOREIGN KEY (assigned_case_id) REFERENCES business_cases(id) ON DELETE SET NULL
       )
     `);
 
@@ -50,6 +54,32 @@ export const initializeDatabase = async () => {
       await bootstrapConnection.query(`
         ALTER TABLE users
         ADD COLUMN is_admin TINYINT(1) NOT NULL DEFAULT 0 AFTER password_hash
+      `);
+    }
+
+    const [roleColumns] = await bootstrapConnection.query(`
+      SHOW COLUMNS FROM users LIKE 'role'
+    `);
+
+    if (roleColumns.length === 0) {
+      await bootstrapConnection.query(`
+        ALTER TABLE users
+        ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT 'participant' AFTER password_hash
+      `);
+    }
+
+    const [assignedCaseColumns] = await bootstrapConnection.query(`
+      SHOW COLUMNS FROM users LIKE 'assigned_case_id'
+    `);
+
+    if (assignedCaseColumns.length === 0) {
+      await bootstrapConnection.query(`
+        ALTER TABLE users
+        ADD COLUMN assigned_case_id INT UNSIGNED NULL AFTER is_admin
+      `);
+      await bootstrapConnection.query(`
+        ALTER TABLE users
+        ADD CONSTRAINT fk_users_assigned_case FOREIGN KEY (assigned_case_id) REFERENCES business_cases(id) ON DELETE SET NULL
       `);
     }
 
@@ -135,6 +165,28 @@ export const initializeDatabase = async () => {
       )
     `);
 
+    await bootstrapConnection.query(`
+      CREATE TABLE IF NOT EXISTS judge_scores (
+        id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+        judge_user_id INT UNSIGNED NOT NULL,
+        team_id INT UNSIGNED NOT NULL,
+        problem_understanding TINYINT UNSIGNED NOT NULL DEFAULT 0,
+        solution_quality TINYINT UNSIGNED NOT NULL DEFAULT 0,
+        innovation TINYINT UNSIGNED NOT NULL DEFAULT 0,
+        feasibility TINYINT UNSIGNED NOT NULL DEFAULT 0,
+        prototype_mvp TINYINT UNSIGNED NOT NULL DEFAULT 0,
+        pitch_presentation TINYINT UNSIGNED NOT NULL DEFAULT 0,
+        total_score TINYINT UNSIGNED NOT NULL DEFAULT 0,
+        comments TEXT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        UNIQUE KEY uniq_judge_team (judge_user_id, team_id),
+        CONSTRAINT fk_judge_scores_judge FOREIGN KEY (judge_user_id) REFERENCES users(id) ON DELETE CASCADE,
+        CONSTRAINT fk_judge_scores_team FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
+      )
+    `);
+
     for (const seed of caseSeeds) {
       await bootstrapConnection.query(
         `INSERT INTO business_cases (slug, title, summary)
@@ -160,6 +212,34 @@ export const initializeDatabase = async () => {
       await bootstrapConnection.query(`UPDATE users SET is_admin = 1 WHERE email = ?`, [
         process.env.ADMIN_EMAIL.trim().toLowerCase(),
       ]);
+    }
+
+    if (process.env.JUDGE_TRIAL_EMAIL && process.env.JUDGE_TRIAL_PASSWORD) {
+      const judgeCaseSlug = (process.env.JUDGE_TRIAL_CASE_SLUG || "case-1").trim();
+      const [judgeCaseRows] = await bootstrapConnection.query(
+        `SELECT id FROM business_cases WHERE slug = ? LIMIT 1`,
+        [judgeCaseSlug]
+      );
+
+      if (judgeCaseRows.length > 0) {
+        await bootstrapConnection.query(
+          `INSERT INTO users (full_name, email, phone_number, password_hash, role, is_admin, assigned_case_id)
+           VALUES (?, ?, ?, ?, 'judge', 0, ?)
+           ON DUPLICATE KEY UPDATE
+             full_name = VALUES(full_name),
+             phone_number = VALUES(phone_number),
+             password_hash = VALUES(password_hash),
+             role = 'judge',
+             assigned_case_id = VALUES(assigned_case_id)`,
+          [
+            process.env.JUDGE_TRIAL_FULL_NAME || "Judge Demo",
+            process.env.JUDGE_TRIAL_EMAIL.trim().toLowerCase(),
+            process.env.JUDGE_TRIAL_PHONE || "+77000000001",
+            hashPassword(process.env.JUDGE_TRIAL_PASSWORD),
+            judgeCaseRows[0].id,
+          ]
+        );
+      }
     }
   } finally {
     await bootstrapConnection.end();

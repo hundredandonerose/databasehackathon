@@ -33,8 +33,8 @@ export const register = async (req, res) => {
     }
 
     const [result] = await pool.execute(
-      `INSERT INTO users (full_name, email, phone_number, password_hash, is_admin)
-       VALUES (?, ?, ?, ?, ?)`,
+      `INSERT INTO users (full_name, email, phone_number, password_hash, role, is_admin)
+       VALUES (?, ?, ?, ?, 'participant', ?)`,
       [
         sanitized.fullName,
         sanitized.email,
@@ -53,6 +53,8 @@ export const register = async (req, res) => {
         fullName: sanitized.fullName,
         email: sanitized.email,
         phoneNumber: sanitized.phoneNumber,
+        role: "participant",
+        judgeCaseId: null,
         isAdmin: isAdminEmail(sanitized.email),
       },
     });
@@ -71,7 +73,7 @@ export const login = async (req, res) => {
 
   try {
     const [rows] = await pool.execute(
-      `SELECT id, full_name, email, phone_number, password_hash, is_admin
+      `SELECT id, full_name, email, phone_number, password_hash, role, is_admin, assigned_case_id
        FROM users
        WHERE email = ?
        LIMIT 1`,
@@ -96,6 +98,8 @@ export const login = async (req, res) => {
         fullName: rows[0].full_name,
         email: rows[0].email,
         phoneNumber: rows[0].phone_number,
+        role: rows[0].role || "participant",
+        judgeCaseId: rows[0].assigned_case_id,
         isAdmin: Boolean(rows[0].is_admin),
       },
     });
@@ -122,6 +126,8 @@ export const me = async (req, res) => {
       fullName: req.auth.full_name,
       email: req.auth.email,
       phoneNumber: req.auth.phone_number,
+      role: req.auth.role || "participant",
+      judgeCaseId: req.auth.assigned_case_id,
       isAdmin: Boolean(req.auth.is_admin),
     },
   });

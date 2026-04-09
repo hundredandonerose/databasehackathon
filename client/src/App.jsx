@@ -69,6 +69,15 @@ const createTeamForm = (size = 3) => ({
   members: Array.from({ length: size }, () => createMember()),
 });
 
+const judgeCriteriaFallback = [
+  { key: "problemUnderstanding", label: "Понимание проблемы", max: 15 },
+  { key: "solutionQuality", label: "Качество решения", max: 20 },
+  { key: "innovation", label: "Инновационность", max: 15 },
+  { key: "feasibility", label: "Реализуемость", max: 20 },
+  { key: "prototypeMvp", label: "Прототип / MVP", max: 15 },
+  { key: "pitchPresentation", label: "Питч / Презентация", max: 15 },
+];
+
 function App() {
   const [isNavHidden, setIsNavHidden] = useState(false);
   const [token, setToken] = useState(() => localStorage.getItem("hackathon_token") || "");
@@ -92,11 +101,16 @@ function App() {
   const [checkpointStatus, setCheckpointStatus] = useState("");
   const [adminOverview, setAdminOverview] = useState(null);
   const [adminStatus, setAdminStatus] = useState("");
+  const [judgeDashboard, setJudgeDashboard] = useState(null);
+  const [judgeStatus, setJudgeStatus] = useState("");
+  const [judgeDrafts, setJudgeDrafts] = useState({});
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [isTeamSaving, setIsTeamSaving] = useState(false);
   const [savingCheckpointCode, setSavingCheckpointCode] = useState("");
+  const [savingJudgeTeamId, setSavingJudgeTeamId] = useState("");
 
   const teamSize = useMemo(() => teamForm.members.length, [teamForm.members.length]);
+  const isJudge = user?.role === "judge";
 
   useEffect(() => {
     let lastScrollY = window.scrollY;
@@ -116,19 +130,50 @@ function App() {
       setUser(null);
       setTeam(null);
       setAdminOverview(null);
+      setJudgeDashboard(null);
       return;
     }
 
     const bootstrap = async () => {
       try {
-        const [meData, casesData, checkpointsData, teamData] = await Promise.all([
-          apiRequest("/auth/me", "GET", null, token),
+        const meData = await apiRequest("/auth/me", "GET", null, token);
+
+        setUser(meData.user);
+        if (meData.user?.role === "judge") {
+          const judgeData = await apiRequest("/judge/dashboard", "GET", null, token);
+          setJudgeDashboard(judgeData);
+          setJudgeDrafts(
+            Object.fromEntries(
+              (judgeData.teams || []).map((teamItem) => [
+                teamItem.id,
+                {
+                  problemUnderstanding: teamItem.score?.problemUnderstanding ?? 0,
+                  solutionQuality: teamItem.score?.solutionQuality ?? 0,
+                  innovation: teamItem.score?.innovation ?? 0,
+                  feasibility: teamItem.score?.feasibility ?? 0,
+                  prototypeMvp: teamItem.score?.prototypeMvp ?? 0,
+                  pitchPresentation: teamItem.score?.pitchPresentation ?? 0,
+                  comments: teamItem.score?.comments ?? "",
+                },
+              ])
+            )
+          );
+          setCases([]);
+          setCheckpointsMeta([]);
+          applyTeamState(null);
+          setAdminOverview(null);
+          setAdminStatus("");
+          return;
+        }
+
+        const [casesData, checkpointsData, teamData] = await Promise.all([
           apiRequest("/cases", "GET", null, token),
           apiRequest("/checkpoints", "GET", null, token),
           apiRequest("/my-team", "GET", null, token),
         ]);
 
-        setUser(meData.user);
+        setJudgeDashboard(null);
+        setJudgeDrafts({});
         setCases(casesData.cases || []);
         setCheckpointsMeta(checkpointsData.checkpoints || []);
         applyTeamState(teamData.team);
@@ -238,6 +283,9 @@ function App() {
       setCheckpointsMeta([]);
       setAdminOverview(null);
       setAdminStatus("");
+      setJudgeDashboard(null);
+      setJudgeStatus("");
+      setJudgeDrafts({});
       applyTeamState(null);
     }
   };
@@ -349,11 +397,39 @@ function App() {
     };
   });
 
+  const handleJudgeDraftChange = (teamId, field, value) => {
+    setJudgeDrafts((current) => ({
+      ...current,
+      [teamId]: {
+        ...current[teamId],
+        [field]: field === "comments" ? value : Number(value),
+      },
+    }));
+    setJudgeStatus("");
+  };
+
+  const submitJudgeScore = async (teamId) => {
+    setSavingJudgeTeamId(String(teamId));
+    setJudgeStatus("");
+
+    try {
+      const payload = judgeDrafts[teamId] || {};
+      const data = await apiRequest(`/judge/scores/${teamId}`, "PUT", payload, token);
+      const refreshed = await apiRequest("/judge/dashboard", "GET", null, token);
+      setJudgeDashboard(refreshed);
+      setJudgeStatus(data.message);
+    } catch (error) {
+      setJudgeStatus(error.message || "Не удалось сохранить оценку.");
+    } finally {
+      setSavingJudgeTeamId("");
+    }
+  };
+
   return (
     <>
       <Navbar
-        brand="Almaty Digital"
-        links={navLinks}
+        brand={isJudge ? "Judge Panel" : "Almaty Digital"}
+        links={isJudge ? [{ href: "#portal", label: "Оценивание" }] : navLinks}
         languages={languages}
         currentLanguage="ru"
         onLanguageChange={() => {}}
@@ -373,15 +449,23 @@ function App() {
                 </div>
               </div>
               <h1>
-                Almaty Digital <span>Hackathon 2026</span>
+                {isJudge ? (
+                  <>
+                    Judge <span>Dashboard 2026</span>
+                  </>
+                ) : (
+                  <>
+                    Almaty Digital <span>Hackathon 2026</span>
+                  </>
+                )}
               </h1>
               <p>
-                Молодежный технологический хакатон на 24 часа. До входа в аккаунт
-                участники видят только информацию о событии, а после логина получают
-                доступ к кейсам, регистрации команды и checkpoint&apos;ам.
+                {isJudge
+                  ? "После входа жюри видит только назначенный кейс, команды по порядку и форму оценки по критериям."
+                  : "Молодежный технологический хакатон на 24 часа. До входа в аккаунт участники видят только информацию о событии, а после логина получают доступ к кейсам, регистрации команды и checkpoint'ам."}
               </p>
 
-              <div className="hero-stats">
+              {!isJudge ? <div className="hero-stats">
                 <article className="hero-stat-card">
                   <strong>300+</strong>
                   <span>участников</span>
@@ -394,18 +478,18 @@ function App() {
                   <strong>2 250 000 тг</strong>
                   <span>призовой фонд</span>
                 </article>
-              </div>
+              </div> : null}
 
-              <div className="hero-support">
+              {!isJudge ? <div className="hero-support">
                 <span>При поддержке:</span>
                 <div className="hero-support__chips">
                   <span>ALT University</span>
                   <span>Alatau City Bank</span>
                   <span>Innovation Partners</span>
                 </div>
-              </div>
+              </div> : null}
 
-              <div className="hero-ribbon">
+              {!isJudge ? <div className="hero-ribbon">
                 <div>
                   <strong>3</strong>
                   <span>бизнес-кейса</span>
@@ -422,7 +506,7 @@ function App() {
                   <strong>24ч</strong>
                   <span>интенсива</span>
                 </div>
-              </div>
+              </div> : null}
             </div>
 
             <div className="auth-card">
@@ -520,9 +604,11 @@ function App() {
                   <span className="hero-pill">Portal открыт</span>
                   <h2>Привет, {user.fullName}</h2>
                   <p>
-                    Теперь тебе доступен профиль команды, 3 бизнес-кейса и все обязательные checkpoint&apos;ы.
+                    {isJudge
+                      ? "Тебе доступен только назначенный кейс и последовательная оценка команд по критериям."
+                      : "Теперь тебе доступен профиль команды, 3 бизнес-кейса и все обязательные checkpoint'ы."}
                   </p>
-                  <div className="portal-summary__meta">
+                  {!isJudge ? <div className="portal-summary__meta">
                     <div>
                       <strong>Команда</strong>
                       <span>{team ? team.teamName : "Еще не зарегистрирована"}</span>
@@ -533,10 +619,10 @@ function App() {
                         {team?.checkpoints?.filter((item) => item.status === "submitted").length || 0}/3 завершено
                       </span>
                     </div>
-                  </div>
+                  </div> : null}
                   <div className="portal-summary__actions">
                     <a href="#portal" className="button button--primary">
-                      Открыть кабинет
+                      {isJudge ? "Открыть оценивание" : "Открыть кабинет"}
                     </a>
                     <button type="button" className="button button--ghost" onClick={logout}>
                       Выйти
@@ -548,7 +634,7 @@ function App() {
           </div>
         </section>
 
-        <section className="sponsor-teaser" id="sponsors">
+        {!isJudge ? <section className="sponsor-teaser" id="sponsors">
           <div className="container sponsor-teaser__wrap">
             <div className="sponsor-teaser__intro">
               <span className="section-heading__eyebrow">Партнеры</span>
@@ -566,9 +652,9 @@ function App() {
               ))}
             </div>
           </div>
-        </section>
+        </section> : null}
 
-        <section className="section" id="about">
+        {!isJudge ? <section className="section" id="about">
           <div className="container">
             <SectionHeading
               eyebrow="О хакатоне"
@@ -590,9 +676,9 @@ function App() {
               </article>
             </div>
           </div>
-        </section>
+        </section> : null}
 
-        <section className="section section--muted" id="venue">
+        {!isJudge ? <section className="section section--muted" id="venue">
           <div className="container venue">
             <div>
               <SectionHeading
@@ -624,9 +710,9 @@ function App() {
               </a>
             </div>
           </div>
-        </section>
+        </section> : null}
 
-        <section className="section" id="details">
+        {!isJudge ? <section className="section" id="details">
           <div className="container">
             <SectionHeading
               eyebrow="Детали"
@@ -722,9 +808,9 @@ function App() {
               </div>
             </div>
           </div>
-        </section>
+        </section> : null}
 
-        <section className="section section--accent">
+        {!isJudge ? <section className="section section--accent">
           <div className="container">
             <SectionHeading
               eyebrow="Release"
@@ -734,15 +820,23 @@ function App() {
             />
             <Countdown targetDate={countdownTarget} texts={countdownTexts} />
           </div>
-        </section>
+        </section> : null}
 
         <section className="section portal-section" id="portal">
           <div className="container">
             <SectionHeading
-              eyebrow="Team Portal"
-              title={user ? "Кабинет команды" : "Кабинет откроется после регистрации и логина"}
+              eyebrow={isJudge ? "Judge Panel" : "Team Portal"}
+              title={
+                isJudge
+                  ? "Оценивание команд по назначенному кейсу"
+                  : user
+                    ? "Кабинет команды"
+                    : "Кабинет откроется после регистрации и логина"
+              }
               description={
-                user
+                isJudge
+                  ? "Жюри видит только свой кейс, список команд по порядку и форму оценки по критериям."
+                  : user
                   ? "Сначала зарегистрируйте состав команды и выберите кейс. После этого ниже откроется отдельный блок для checkpoint'ов."
                   : "Сейчас здесь только превью возможностей. После регистрации и входа откроются кейсы, регистрация команды и checkpoint'ы."
               }
@@ -758,6 +852,85 @@ function App() {
                   <li>отдельный блок checkpoint&apos;ов после входа</li>
                   <li>сдача презентации, репозитория и финальных материалов</li>
                 </ul>
+              </div>
+            ) : isJudge ? (
+              <div className="judge-board">
+                <section className="portal-panel judge-board__intro">
+                  <div className="portal-panel__header">
+                    <h3>{judgeDashboard?.assignedCase?.title || "Назначенный кейс"}</h3>
+                    <p>
+                      {judgeDashboard?.assignedCase?.summary ||
+                        "У этого аккаунта уже закреплен один кейс, и жюри не видит команды из других кейсов."}
+                    </p>
+                  </div>
+                </section>
+
+                <div className="judge-teams">
+                  {(judgeDashboard?.teams || []).map((teamItem, index) => (
+                    <article key={teamItem.id} className="portal-panel judge-team-card">
+                      <div className="judge-team-card__header">
+                        <div>
+                          <span className="hero-pill">Команда {index + 1}</span>
+                          <h3>{teamItem.teamName}</h3>
+                          <p>Капитан: {teamItem.captainName}</p>
+                        </div>
+                        <div className="judge-team-card__score">
+                          <strong>{teamItem.score?.totalScore ?? 0}</strong>
+                          <span>/ 100</span>
+                        </div>
+                      </div>
+
+                      <div className="judge-team-card__members">
+                        {teamItem.members.map((member, memberIndex) => (
+                          <div key={`${teamItem.id}-${memberIndex}`} className="judge-member-chip">
+                            <strong>{member.fullName}</strong>
+                            <small>{member.gradeOrCourse}</small>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="judge-criteria-grid">
+                        {(judgeDashboard?.criteria || judgeCriteriaFallback).map((criterion) => (
+                          <label key={`${teamItem.id}-${criterion.key}`} className="field">
+                            <span>
+                              {criterion.label} / {criterion.max}
+                            </span>
+                            <input
+                              type="number"
+                              min="0"
+                              max={criterion.max}
+                              value={judgeDrafts[teamItem.id]?.[criterion.key] ?? 0}
+                              onChange={(event) =>
+                                handleJudgeDraftChange(teamItem.id, criterion.key, event.target.value)
+                              }
+                            />
+                          </label>
+                        ))}
+                      </div>
+
+                      <label className="field">
+                        <span>Комментарий жюри</span>
+                        <textarea
+                          rows="4"
+                          value={judgeDrafts[teamItem.id]?.comments ?? ""}
+                          onChange={(event) => handleJudgeDraftChange(teamItem.id, "comments", event.target.value)}
+                          placeholder="Короткий комментарий по сильным и слабым сторонам команды"
+                        />
+                      </label>
+
+                      <button
+                        type="button"
+                        className="button button--primary"
+                        onClick={() => submitJudgeScore(teamItem.id)}
+                        disabled={savingJudgeTeamId === String(teamItem.id)}
+                      >
+                        {savingJudgeTeamId === String(teamItem.id) ? "Сохранение..." : "Сохранить оценку"}
+                      </button>
+                    </article>
+                  ))}
+                </div>
+
+                {judgeStatus ? <div className="form-status form-status--success">{judgeStatus}</div> : null}
               </div>
             ) : (
               <>

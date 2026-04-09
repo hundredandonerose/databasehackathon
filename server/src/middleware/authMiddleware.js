@@ -12,7 +12,7 @@ export const requireAuth = async (req, res, next) => {
   try {
     const tokenHash = hashToken(token);
     const [rows] = await pool.execute(
-      `SELECT sessions.id, sessions.user_id, users.full_name, users.email, users.phone_number, users.is_admin
+      `SELECT sessions.id, sessions.user_id, users.full_name, users.email, users.phone_number, users.role, users.is_admin, users.assigned_case_id
        FROM sessions
        JOIN users ON users.id = sessions.user_id
        WHERE sessions.token_hash = ? AND sessions.expires_at > NOW()
@@ -36,6 +36,14 @@ export const requireAuth = async (req, res, next) => {
 export const requireAdmin = async (req, res, next) => {
   if (!req.auth?.is_admin) {
     return res.status(403).json({ message: "Доступ только для администратора." });
+  }
+
+  return next();
+};
+
+export const requireJudge = async (req, res, next) => {
+  if (req.auth?.role !== "judge") {
+    return res.status(403).json({ message: "Доступ только для жюри." });
   }
 
   return next();

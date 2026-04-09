@@ -7,10 +7,13 @@ CREATE TABLE IF NOT EXISTS users (
   email VARCHAR(190) NOT NULL,
   phone_number VARCHAR(25) NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
+  role VARCHAR(20) NOT NULL DEFAULT 'participant',
   is_admin TINYINT(1) NOT NULL DEFAULT 0,
+  assigned_case_id INT UNSIGNED NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
-  UNIQUE KEY uniq_users_email (email)
+  UNIQUE KEY uniq_users_email (email),
+  CONSTRAINT fk_users_assigned_case FOREIGN KEY (assigned_case_id) REFERENCES business_cases(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS sessions (
@@ -81,4 +84,24 @@ CREATE TABLE IF NOT EXISTS team_checkpoint_submissions (
   UNIQUE KEY uniq_team_checkpoint (team_id, checkpoint_id),
   CONSTRAINT fk_team_checkpoint_submissions_team FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE,
   CONSTRAINT fk_team_checkpoint_submissions_checkpoint FOREIGN KEY (checkpoint_id) REFERENCES checkpoints(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS judge_scores (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  judge_user_id INT UNSIGNED NOT NULL,
+  team_id INT UNSIGNED NOT NULL,
+  problem_understanding TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  solution_quality TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  innovation TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  feasibility TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  prototype_mvp TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  pitch_presentation TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  total_score TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  comments TEXT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uniq_judge_team (judge_user_id, team_id),
+  CONSTRAINT fk_judge_scores_judge FOREIGN KEY (judge_user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_judge_scores_team FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
 );

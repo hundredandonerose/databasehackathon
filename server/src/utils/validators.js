@@ -133,3 +133,39 @@ export const validateCheckpointInput = (payload) => {
     sanitized: { submissionUrl, notes },
   };
 };
+
+const scoreLimits = {
+  problemUnderstanding: 15,
+  solutionQuality: 20,
+  innovation: 15,
+  feasibility: 20,
+  prototypeMvp: 15,
+  pitchPresentation: 15,
+};
+
+export const validateJudgeScoreInput = (payload) => {
+  const errors = {};
+
+  const parseScore = (key) => {
+    const limit = scoreLimits[key];
+    const numeric = Number(payload[key]);
+
+    if (!Number.isInteger(numeric) || numeric < 0 || numeric > limit) {
+      errors[key] = `Введите балл от 0 до ${limit}.`;
+    }
+
+    return Number.isInteger(numeric) ? numeric : 0;
+  };
+
+  const sanitized = {
+    problemUnderstanding: parseScore("problemUnderstanding"),
+    solutionQuality: parseScore("solutionQuality"),
+    innovation: parseScore("innovation"),
+    feasibility: parseScore("feasibility"),
+    prototypeMvp: parseScore("prototypeMvp"),
+    pitchPresentation: parseScore("pitchPresentation"),
+    comments: clean(payload.comments),
+  };
+
+  return { errors, sanitized };
+};

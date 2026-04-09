@@ -372,7 +372,8 @@ select {
 }
 
 .field input,
-.field select {
+.field select,
+.field textarea {
   width: 100%;
   min-height: 50px;
   padding: 13px 15px;
@@ -384,9 +385,15 @@ select {
 }
 
 .field input:focus,
-.field select:focus {
+.field select:focus,
+.field textarea:focus {
   border-color: rgba(63, 130, 255, 0.45);
   box-shadow: 0 0 0 4px rgba(63, 130, 255, 0.08);
+}
+
+.field textarea {
+  min-height: 116px;
+  resize: vertical;
 }
 
 .field-note,
@@ -817,6 +824,76 @@ select {
 
 .portal-panel--checkpoints {
   margin-top: 18px;
+}
+
+.judge-board,
+.judge-teams {
+  display: grid;
+  gap: 18px;
+}
+
+.judge-team-card {
+  display: grid;
+  gap: 16px;
+}
+
+.judge-team-card__header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.judge-team-card__header h3 {
+  margin: 10px 0 6px;
+  font-family: "Space Grotesk", sans-serif;
+}
+
+.judge-team-card__header p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.judge-team-card__score {
+  display: grid;
+  justify-items: end;
+  min-width: 92px;
+}
+
+.judge-team-card__score strong {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--blue);
+}
+
+.judge-team-card__score span {
+  color: var(--muted);
+}
+
+.judge-team-card__members {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.judge-member-chip {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.judge-member-chip small {
+  color: var(--muted);
+}
+
+.judge-criteria-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
 }
 
 .portal-panel__header,
