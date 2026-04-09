@@ -47,7 +47,7 @@ const publicCases = [
 const sponsors = [
   { name: "abr", logo: "/sponsors/abr_logo.png", alt: "abr logo", className: "sponsor-teaser__logo-image sponsor-teaser__logo-image--dark" },
   { name: "ALT University", logo: "/sponsors/alt_university.jpeg", alt: "ALT University logo", className: "sponsor-teaser__logo-image" },
-  { name: "NIS", logo: "/sponsors/nis.webp", alt: "NIS logo", className: "sponsor-teaser__logo-image" },
+  { name: "Alatau City Bank", logo: "/sponsors/nis.webp", alt: "Alatau City Bank logo", className: "sponsor-teaser__logo-image" },
   { name: "Kcell", logo: "/sponsors/kcell.png", alt: "Kcell logo", className: "sponsor-teaser__logo-image" },
 ];
 
@@ -328,7 +328,7 @@ function App() {
       applyTeamState(data.team);
       setCheckpointStatus(data.message);
     } catch (error) {
-      setCheckpointStatus(error.message || "Не удалось сохранить checkpoint.");
+      setCheckpointStatus(error.errors?.submissionUrl || error.message || "Не удалось сохранить checkpoint.");
     } finally {
       setSavingCheckpointCode("");
     }
@@ -352,7 +352,7 @@ function App() {
   return (
     <>
       <Navbar
-        brand="Almaty Innovators"
+        brand="Almaty Digital"
         links={navLinks}
         languages={languages}
         currentLanguage="ru"
@@ -373,7 +373,7 @@ function App() {
                 </div>
               </div>
               <h1>
-                Almaty Innovators <span>Hackathon 2026</span>
+                Almaty Digital <span>Hackathon 2026</span>
               </h1>
               <p>
                 Молодежный технологический хакатон на 24 часа. До входа в аккаунт
@@ -391,7 +391,7 @@ function App() {
                   <span>длительность</span>
                 </article>
                 <article className="hero-stat-card">
-                  <strong>1.5 млн тг</strong>
+                  <strong>2 250 000 тг</strong>
                   <span>призовой фонд</span>
                 </article>
               </div>
@@ -400,7 +400,7 @@ function App() {
                 <span>При поддержке:</span>
                 <div className="hero-support__chips">
                   <span>ALT University</span>
-                  <span>NIS</span>
+                  <span>Alatau City Bank</span>
                   <span>Innovation Partners</span>
                 </div>
               </div>
@@ -553,11 +553,11 @@ function App() {
             <div className="sponsor-teaser__intro">
               <span className="section-heading__eyebrow">Партнеры</span>
               <h2>Партнеры, которых видно сразу</h2>
-              <p>Этот блок расположен высоко на странице, чтобы sponsors и supporters были заметны с первого экрана.</p>
+                <p>Этот блок расположен высоко на странице, чтобы sponsors и supporters были заметны с первого экрана.</p>
             </div>
-            <div className="sponsor-teaser__grid">
-              {sponsors.map((sponsor) => (
-                <article key={sponsor.name} className="sponsor-teaser__card">
+            <div className="sponsor-teaser__grid sponsor-teaser__grid--animated">
+              {sponsors.map((sponsor, index) => (
+                <article key={sponsor.name} className="sponsor-teaser__card" style={{ animationDelay: `${index * 0.45}s` }}>
                   <div className="sponsor-teaser__logo">
                     <img className={sponsor.className} src={sponsor.logo} alt={sponsor.alt} />
                   </div>
@@ -637,7 +637,7 @@ function App() {
             <div className="prize-spotlight">
               <div className="prize-spotlight__main">
                 <span className="prize-spotlight__badge">Призовой фонд</span>
-                <h3>1.5 млн тг</h3>
+                <h3>2 250 000 тг</h3>
                 <p>3 бизнес-кейса. На каждый кейс по 3 победителя: 250 000 / 150 000 / 100 000 тг.</p>
               </div>
               <div className="prize-spotlight__split">
@@ -772,7 +772,7 @@ function App() {
                             name="teamName"
                             value={teamForm.teamName}
                             onChange={handleTeamChange}
-                            placeholder="Almaty Innovators"
+                            placeholder="Almaty Digital"
                           />
                           {teamErrors.teamName ? <small className="field-error">{teamErrors.teamName}</small> : null}
                         </label>
@@ -984,7 +984,7 @@ function App() {
                               {adminTeam.members.map((member, index) => (
                                 <div key={`${adminTeam.id}-${index}`} className="admin-member-row">
                                   <strong>{member.fullName}</strong>
-                                  <small>{member.phoneNumber}</small>
+                                  <small className="admin-member-row__phone">{member.phoneNumber}</small>
                                   <small>{member.gradeOrCourse}</small>
                                 </div>
                               ))}

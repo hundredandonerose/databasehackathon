@@ -5,6 +5,23 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const urlRegex = /^https?:\/\/.+/i;
 
 const clean = (value) => (typeof value === "string" ? value.trim().replace(/\s+/g, " ") : "");
+const normalizeUrl = (value) => {
+  const cleaned = clean(value);
+
+  if (!cleaned) {
+    return "";
+  }
+
+  if (urlRegex.test(cleaned)) {
+    return cleaned;
+  }
+
+  if (/^[^\s]+\.[^\s]+/.test(cleaned)) {
+    return `https://${cleaned}`;
+  }
+
+  return cleaned;
+};
 
 export const validateRegisterInput = (payload) => {
   const errors = {};
@@ -104,7 +121,7 @@ export const validateTeamInput = (payload) => {
 
 export const validateCheckpointInput = (payload) => {
   const errors = {};
-  const submissionUrl = clean(payload.submissionUrl);
+  const submissionUrl = normalizeUrl(payload.submissionUrl);
   const notes = clean(payload.notes);
 
   if (!urlRegex.test(submissionUrl)) {
@@ -116,4 +133,3 @@ export const validateCheckpointInput = (payload) => {
     sanitized: { submissionUrl, notes },
   };
 };
-

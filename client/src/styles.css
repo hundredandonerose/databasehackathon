@@ -505,6 +505,11 @@ select {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.sponsor-teaser__grid--animated .sponsor-teaser__card {
+  animation: sponsorSnake 6.4s ease-in-out infinite;
+  will-change: transform;
+}
+
 .sponsor-teaser__card {
   display: grid;
   gap: 12px;
@@ -534,6 +539,24 @@ select {
 .sponsor-teaser__logo-image--dark {
   max-height: 62px;
   border-radius: 12px;
+}
+
+@keyframes sponsorSnake {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate3d(6px, -8px, 0) rotate(1deg);
+  }
+  50% {
+    transform: translate3d(0, -14px, 0) rotate(0deg);
+  }
+  75% {
+    transform: translate3d(-6px, -8px, 0) rotate(-1deg);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
 }
 
 .glass-card,
@@ -574,8 +597,8 @@ select {
 .prize-spotlight__main {
   padding: 28px;
   background:
-    radial-gradient(circle at top right, rgba(255, 255, 255, 0.3), transparent 34%),
-    linear-gradient(135deg, #4d74bf 0%, #6b8fd5 100%);
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.38), transparent 36%),
+    linear-gradient(135deg, #7599db 0%, #9db5ea 100%);
   color: white;
 }
 
@@ -772,6 +795,7 @@ select {
 
 .portal-grid {
   grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  align-items: start;
 }
 
 .portal-panel__header,
@@ -798,6 +822,16 @@ select {
   border: 1px solid var(--line);
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.7);
+}
+
+.team-form {
+  display: grid;
+  gap: 16px;
+}
+
+.members-section {
+  display: grid;
+  gap: 12px;
 }
 
 .portal-summary__meta {
@@ -1004,6 +1038,9 @@ select {
 
 .admin-member-row {
   align-items: center;
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(160px, 0.8fr) minmax(110px, 0.6fr);
+  gap: 12px;
 }
 
 .admin-member-row strong,
@@ -1017,6 +1054,13 @@ select {
 .admin-checkpoint-row small,
 .admin-checkpoint-row__empty {
   color: var(--muted);
+}
+
+.admin-member-row__phone {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  text-align: left;
+  white-space: nowrap;
 }
 
 .admin-checkpoint-row.is-submitted {
@@ -1142,6 +1186,10 @@ select {
   .admin-checkpoint-row,
   .admin-member-row {
     flex-direction: column;
+  }
+
+  .admin-member-row {
+    grid-template-columns: 1fr;
   }
 
   .auth-card,
