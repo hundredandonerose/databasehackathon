@@ -630,8 +630,8 @@ function App() {
           <div className="container">
             <SectionHeading
               eyebrow="Детали"
-              title="Структура хакатона, кейсов и обязательных checkpoint&apos;ов"
-              description="Команда выбирает один кейс, регистрирует состав в профиле и проходит три обязательных checkpoint&apos;а с загрузкой ссылок на материалы."
+              title="Структура хакатона и бизнес-кейсов"
+              description="Команда выбирает один кейс, работает над решением 24 часа и после входа получает доступ к кабинету команды."
             />
 
             <div className="prize-spotlight">
@@ -738,8 +738,8 @@ function App() {
               title={user ? "Кабинет команды" : "Кабинет откроется после регистрации и логина"}
               description={
                 user
-                  ? "Здесь команда выбирает кейс, регистрирует состав и проходит все обязательные checkpoint'ы."
-                  : "Сейчас здесь только превью возможностей. После входа откроются кейсы, регистрация команды и checkpoint'ы."
+                  ? "Сначала зарегистрируйте состав команды и выберите кейс. После этого ниже откроется отдельный блок для checkpoint'ов."
+                  : "Сейчас здесь только превью возможностей. После регистрации и входа откроются кейсы, регистрация команды и checkpoint'ы."
               }
             />
 
@@ -750,7 +750,7 @@ function App() {
                 <ul className="locked-list">
                   <li>регистрация команды в профиле</li>
                   <li>выбор одного из трех бизнес-кейсов</li>
-                  <li>обязательные checkpoint&apos;ы 1 / 2 / 3</li>
+                  <li>отдельный блок checkpoint&apos;ов после входа</li>
                   <li>сдача презентации, репозитория и финальных материалов</li>
                 </ul>
               </div>
@@ -869,10 +869,9 @@ function App() {
 
                   <section className="portal-panel">
                     <div className="portal-panel__header">
-                      <h3>Кейсы и checkpoint&apos;ы</h3>
+                      <h3>Выбор кейса</h3>
                       <p>
-                        Все три checkpoint&apos;а обязательны. Без предыдущего нельзя
-                        отправить следующий, поэтому команда должна пройти все 3 этапа.
+                        После сохранения команды выберите один бизнес-кейс. Блок с checkpoint&apos;ами находится ниже и доступен только после входа.
                       </p>
                     </div>
 
@@ -885,58 +884,68 @@ function App() {
                       ))}
                     </div>
 
-                    <div className="checkpoint-grid">
-                      {checkpointCards.map((checkpoint) => (
-                        <article key={checkpoint.code} className="checkpoint-card">
-                          <div className="checkpoint-card__header">
-                            <div>
-                              <span>{checkpointLabels[checkpoint.code] || checkpoint.title}</span>
-                              <h4>{checkpoint.title}</h4>
-                            </div>
-                            <b className={checkpoint.status === "submitted" ? "status-badge status-badge--success" : "status-badge"}>
-                              {checkpoint.status === "submitted" ? "Сдан" : checkpoint.isLocked ? "Закрыт" : "Ожидает"}
-                            </b>
-                          </div>
-                          <p>{checkpoint.description}</p>
-                          <label className="field">
-                            <span>Ссылка на материал</span>
-                            <input
-                              type="url"
-                              value={checkpoint.submissionUrl}
-                              disabled={checkpoint.isLocked}
-                              onChange={(event) =>
-                                handleCheckpointDraft(checkpoint.code, "submissionUrl", event.target.value)
-                              }
-                              placeholder="Google Drive / GitHub / Figma / презентация"
-                            />
-                          </label>
-                          <label className="field">
-                            <span>Комментарий</span>
-                            <input
-                              type="text"
-                              value={checkpoint.notes}
-                              disabled={checkpoint.isLocked}
-                              onChange={(event) =>
-                                handleCheckpointDraft(checkpoint.code, "notes", event.target.value)
-                              }
-                              placeholder="Короткое описание отправки"
-                            />
-                          </label>
-                          <button
-                            type="button"
-                            className="button button--secondary"
-                            disabled={checkpoint.isLocked || savingCheckpointCode === checkpoint.code}
-                            onClick={() => submitCheckpoint(checkpoint.code)}
-                          >
-                            {savingCheckpointCode === checkpoint.code ? "Сохранение..." : "Отправить checkpoint"}
-                          </button>
-                        </article>
-                      ))}
-                    </div>
-
-                    {checkpointStatus ? <div className="form-status form-status--success">{checkpointStatus}</div> : null}
                   </section>
                 </div>
+
+                <section className="portal-panel portal-panel--checkpoints">
+                  <div className="portal-panel__header">
+                    <h3>Checkpoint&apos;ы команды</h3>
+                    <p>
+                      Этот блок доступен только после регистрации и входа. Все три checkpoint&apos;а обязательны, а следующий открывается только после предыдущего.
+                    </p>
+                  </div>
+
+                  <div className="checkpoint-grid">
+                    {checkpointCards.map((checkpoint) => (
+                      <article key={checkpoint.code} className="checkpoint-card">
+                        <div className="checkpoint-card__header">
+                          <div>
+                            <span>{checkpointLabels[checkpoint.code] || checkpoint.title}</span>
+                            <h4>{checkpoint.title}</h4>
+                          </div>
+                          <b className={checkpoint.status === "submitted" ? "status-badge status-badge--success" : "status-badge"}>
+                            {checkpoint.status === "submitted" ? "Сдан" : checkpoint.isLocked ? "Закрыт" : "Ожидает"}
+                          </b>
+                        </div>
+                        <p>{checkpoint.description}</p>
+                        <label className="field">
+                          <span>Ссылка на материал</span>
+                          <input
+                            type="url"
+                            value={checkpoint.submissionUrl}
+                            disabled={checkpoint.isLocked}
+                            onChange={(event) =>
+                              handleCheckpointDraft(checkpoint.code, "submissionUrl", event.target.value)
+                            }
+                            placeholder="Google Drive / GitHub / Figma / презентация"
+                          />
+                        </label>
+                        <label className="field">
+                          <span>Комментарий</span>
+                          <input
+                            type="text"
+                            value={checkpoint.notes}
+                            disabled={checkpoint.isLocked}
+                            onChange={(event) =>
+                              handleCheckpointDraft(checkpoint.code, "notes", event.target.value)
+                            }
+                            placeholder="Короткое описание отправки"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          className="button button--secondary"
+                          disabled={checkpoint.isLocked || savingCheckpointCode === checkpoint.code}
+                          onClick={() => submitCheckpoint(checkpoint.code)}
+                        >
+                          {savingCheckpointCode === checkpoint.code ? "Сохранение..." : "Отправить checkpoint"}
+                        </button>
+                      </article>
+                    ))}
+                  </div>
+
+                  {checkpointStatus ? <div className="form-status form-status--success">{checkpointStatus}</div> : null}
+                </section>
 
                 {user.isAdmin ? (
                   <section className="admin-panel">
